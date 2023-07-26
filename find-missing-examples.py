@@ -2,7 +2,7 @@
 """Display any Kanji examples that don't have a corresponding Vocabulary entry."""
 
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import re
 import sqlite3
@@ -78,6 +78,9 @@ if __name__ == "__main__":
     for ex in sorted(examples):
         found = cur.execute(f"SELECT * FROM notes WHERE mid = {vocab_id} AND sfld = '{ex.jp}'")
         if not found.fetchone():
-            table.add_row(str(ex.date), str(ex.note_id), str(ex.example_id), ex.jp, ex.en)
+            table.add_row(
+                str(ex.date), str(ex.note_id), str(ex.example_id), ex.jp, ex.en,
+                style="yellow" if datetime.now() - ex.date < timedelta(days=1) else None,
+            )
 
     Console().print(table)

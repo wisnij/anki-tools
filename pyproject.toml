@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "anki-tools"
+version = "0.1.0"
+description = ""
+authors = ["Jim Wisniewski <wisnij@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+rich = "^13.5.0"
+anki = "^2.1.65"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import os
 import re
 import sqlite3
+import sys
 
 from rich import box
 from rich.console import Console
@@ -61,7 +62,12 @@ if __name__ == "__main__":
         jp_examples = flds["Japanese examples"].split("<br>")
         en_examples = flds["English examples"].split("<br>")
         if len(jp_examples) != len(en_examples):
-            print(f"ERROR: examples mismatch\n\t{jp_examples}\n\t{en_examples}")
+            print(
+                f"ERROR: examples mismatch on {flds['Kanji']} ({flds['Meaning']}):\n"
+                f"\t{jp_examples}\n"
+                f"\t{en_examples}\n",
+                file=sys.stderr,
+            )
             continue
 
         for n in range(len(jp_examples)):
@@ -78,21 +84,25 @@ if __name__ == "__main__":
                 )
             )
 
-    table = Table("date", "note", "ex#", "Japanese", "English", box=box.SIMPLE)
-    for ex in sorted(examples):
+    last_date = max(ex.date for ex in examples)
+
+    missing_examples = []
+    for ex in examples:
         found = cur.execute(
             f"SELECT * FROM notes WHERE mid = {vocab_id} AND sfld = '{ex.jp}'"
         )
         if not found.fetchone():
-            table.add_row(
-                str(ex.date),
-                str(ex.note_id),
-                str(ex.example_id),
-                ex.jp,
-                ex.en,
-                style="yellow"
-                if datetime.now() - ex.date < timedelta(days=1)
-                else None,
-            )
+            missing_examples.append(ex)
+
+    table = Table("date", "note", "ex#", "Japanese", "English", box=box.SIMPLE)
+    for ex in missing_examples:
+        table.add_row(
+            str(ex.date),
+            str(ex.note_id),
+            str(ex.example_id),
+            ex.jp,
+            ex.en,
+            style="yellow" if last_date - ex.date < timedelta(days=1) else None,
+        )
 
     Console().print(table)

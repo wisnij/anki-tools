@@ -20,7 +20,9 @@ def dict_factory(cursor, row):
 
 
 def notetype_id(cur, field_name):
-    notetype = cur.execute(f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY");
+    notetype = cur.execute(
+        f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY"
+    )
     return notetype.fetchone()["id"]
 
 
@@ -59,7 +61,11 @@ if __name__ == "__main__":
         error = False
 
         # missing required fields
-        missing = list(f for f in {"Kanji", "Meaning", "Japanese examples", "English examples"} if not fields[f])
+        missing = list(
+            f
+            for f in {"Kanji", "Meaning", "Japanese examples", "English examples"}
+            if not fields[f]
+        )
         if missing:
             error = True
             for field in missing:
@@ -82,7 +88,9 @@ if __name__ == "__main__":
             print(f"{display}: leading/trailing space: {kanji!r}")
 
         # Japanese examples with trailing spaces
-        example_lines_ws = list(e for e in fields["Japanese examples"].split("<br>") if e.endswith(SPACES))
+        example_lines_ws = list(
+            e for e in fields["Japanese examples"].split("<br>") if e.endswith(SPACES)
+        )
         if example_lines_ws:
             error = True
             for line in example_lines_ws:
@@ -90,7 +98,8 @@ if __name__ == "__main__":
 
         # kanji without furigana
         no_furigana = list(
-            f for f in {"Japanese examples", "Notes"}
+            f
+            for f in {"Japanese examples", "Notes"}
             if fields[f] and KANJI_RE.search(fields[f]) and "[" not in fields[f]
         )
         if no_furigana:
@@ -109,7 +118,6 @@ if __name__ == "__main__":
 
     print(f"Kanji: {kanji_count} notes, {kanji_errors} error(s)\n")
 
-
     # validate vocabulary
     vocab_id = notetype_id(cur, "Japanese vocab")
     vocab_fields = note_fields(cur, vocab_id)
@@ -126,7 +134,9 @@ if __name__ == "__main__":
         error = False
 
         # missing required fields
-        missing = list(f for f in {"Japanese", "English", "Part of speech"} if not fields[f])
+        missing = list(
+            f for f in {"Japanese", "English", "Part of speech"} if not fields[f]
+        )
         if missing:
             error = True
             for field in missing:
@@ -139,7 +149,8 @@ if __name__ == "__main__":
 
         # kanji without furigana
         no_furigana = list(
-            f for f in {"Japanese", "Japanese examples", "Notes"}
+            f
+            for f in {"Japanese", "Japanese examples", "Notes"}
             if fields[f] and KANJI_RE.search(fields[f]) and "[" not in fields[f]
         )
         if no_furigana:
@@ -160,6 +171,5 @@ if __name__ == "__main__":
             vocab_errors += 1
 
     print(f"Vocabulary: {vocab_count} notes, {vocab_errors} error(s)\n")
-
 
     sys.exit(1 if kanji_errors or vocab_errors else 0)

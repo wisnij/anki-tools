@@ -22,7 +22,9 @@ def dict_factory(cursor, row):
 
 
 def notetype_id(cur, field_name):
-    notetype = cur.execute(f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY");
+    notetype = cur.execute(
+        f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY"
+    )
     return notetype.fetchone()["id"]
 
 
@@ -66,21 +68,31 @@ if __name__ == "__main__":
             jp = jp_examples[n].strip()
             jp = jp.replace("*", "")
             jp = re.sub(r"\](な|する)$", "]", jp)
-            examples.append(Example(
-                jp=jp,
-                en=en_examples[n].strip(),
-                note_id=count,
-                example_id=n + 1,
-                date=datetime.fromtimestamp(note["id"]//1000),
-            ))
+            examples.append(
+                Example(
+                    jp=jp,
+                    en=en_examples[n].strip(),
+                    note_id=count,
+                    example_id=n + 1,
+                    date=datetime.fromtimestamp(note["id"] // 1000),
+                )
+            )
 
     table = Table("date", "note", "ex#", "Japanese", "English", box=box.SIMPLE)
     for ex in sorted(examples):
-        found = cur.execute(f"SELECT * FROM notes WHERE mid = {vocab_id} AND sfld = '{ex.jp}'")
+        found = cur.execute(
+            f"SELECT * FROM notes WHERE mid = {vocab_id} AND sfld = '{ex.jp}'"
+        )
         if not found.fetchone():
             table.add_row(
-                str(ex.date), str(ex.note_id), str(ex.example_id), ex.jp, ex.en,
-                style="yellow" if datetime.now() - ex.date < timedelta(days=1) else None,
+                str(ex.date),
+                str(ex.note_id),
+                str(ex.example_id),
+                ex.jp,
+                ex.en,
+                style="yellow"
+                if datetime.now() - ex.date < timedelta(days=1)
+                else None,
             )
 
     Console().print(table)

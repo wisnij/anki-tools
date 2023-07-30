@@ -91,6 +91,11 @@ if __name__ == "__main__":
         help="Anki collection sqlite file",
     )
     parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="overwrite existing pitch accent fields",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
@@ -116,11 +121,10 @@ if __name__ == "__main__":
             continue
 
         current_accent = note["Pitch accent"]
+        update = False
         if not current_accent:
-            stats.update += 1
             console.print(f"[green]new[/]: {jp} = [#ffffff]{new_accent}[/]")
-            note["Pitch accent"] = new_accent
-            updates.append(note)
+            update = True
         elif current_accent != new_accent:
             stats.different += 1
             console.print(
@@ -128,10 +132,17 @@ if __name__ == "__main__":
                 f"\tcurrent: [#ff0000]{current_accent!r}[/]\n"
                 f"\tnew:     [#00ffff]{new_accent!r}[/]"
             )
+            if args.overwrite:
+                update = True
         else:
             stats.same += 1
             if args.verbose >= 2:
                 console.print(f"[dim white]same[/]: {current_accent!r}")
+
+        if update:
+            stats.update += 1
+            note["Pitch accent"] = new_accent
+            updates.append(note)
 
     print()
     print(f"same:      {stats.same}")

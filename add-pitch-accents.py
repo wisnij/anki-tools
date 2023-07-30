@@ -9,11 +9,16 @@ import os
 from pathlib import Path
 
 from anki.collection import Collection
+from rich.console import Console
+from rich.syntax import Syntax
+
 from util.furigana import furigana_to_kanji, furigana_to_kana
 from util.mora import mora_len, mora_substr
 
 DEFAULT_ACCENTS_FILE = Path(__file__).parent / "accents.json"
 DEFAULT_DB_LOCATION = "~/.local/share/Anki2/Jim/collection.anki2"
+
+console = Console(highlight=False)
 
 
 @dataclass
@@ -85,6 +90,13 @@ if __name__ == "__main__":
         default=os.path.expanduser(DEFAULT_DB_LOCATION),
         help="Anki collection sqlite file",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="print more debugging output",
+    )
     args = parser.parse_args()
 
     with open(args.accents_file) as accents_fh:
@@ -98,25 +110,28 @@ if __name__ == "__main__":
         jp = note["Japanese"]
         new_accent = make_accent_span(accent_data, jp)
         if not new_accent:
-            print(f"unknown: {jp!r}")
             stats.unknown += 1
+            if args.verbose:
+                console.print(f"[yellow]unknown[/]: {jp!r}")
             continue
 
         current_accent = note["Pitch accent"]
         if not current_accent:
-            print(f"new: {jp} = {new_accent}")
+            stats.update += 1
+            console.print(f"[green]new[/]: {jp} = [#ffffff]{new_accent}[/]")
             note["Pitch accent"] = new_accent
             updates.append(note)
-            stats.update += 1
         elif current_accent != new_accent:
-            print(
-                f"WARNING: {jp}: accent difference\n"
-                f"\tcurrent: {current_accent!r}\n"
-                f"\tnew:     {new_accent!r}"
-            )
             stats.different += 1
+            console.print(
+                f"[bold red]WARNING[/]: {jp}: accent difference\n"
+                f"\tcurrent: [#ff0000]{current_accent!r}[/]\n"
+                f"\tnew:     [#00ffff]{new_accent!r}[/]"
+            )
         else:
             stats.same += 1
+            if args.verbose >= 2:
+                console.print(f"[dim white]same[/]: {current_accent!r}")
 
     print()
     print(f"same:      {stats.same}")

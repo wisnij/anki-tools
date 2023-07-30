@@ -5,9 +5,9 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 import os
 import re
-import sqlite3
 import sys
 
+from anki.collection import Collection
 from rich import box
 from rich.console import Console
 from rich.table import Table
@@ -17,53 +17,22 @@ DB_LOCATION = "~/.local/share/Anki2/Jim/collection.anki2"
 Example = namedtuple("Example", ["note_id", "example_id", "jp", "en", "date"])
 
 
-def dict_factory(cursor, row):
-    fields = [column[0] for column in cursor.description]
-    return {key: value for key, value in zip(fields, row)}
-
-
-def notetype_id(cur, field_name):
-    notetype = cur.execute(
-        f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY"
-    )
-    return notetype.fetchone()["id"]
-
-
-def note_fields(cur, notetype_id):
-    fields = {}
-    for field in cur.execute(f"SELECT * FROM fields WHERE ntid = {notetype_id}"):
-        fields[field["ord"]] = field["name"]
-
-    return fields
-
-
 if __name__ == "__main__":
     db_file = os.path.expanduser(DB_LOCATION)
-
-    db = sqlite3.connect(db_file)
-    db.row_factory = dict_factory
-
-    cur = db.cursor()
-
-    kanji_id = notetype_id(cur, "Kanji")
-    vocab_id = notetype_id(cur, "Japanese vocab")
-
-    kanji_fields = note_fields(cur, kanji_id)
-    vocab_fields = note_fields(cur, vocab_id)
+    col = Collection(db_file)
 
     examples = []
     suffixes = ("]な", "]する")
     count = 0
-    for note in cur.execute(f"SELECT * FROM notes WHERE mid = {kanji_id} ORDER BY id"):
+    for note_id in sorted(col.find_notes("note:Kanji")):
         count += 1
-        raw = note["flds"].split("\x1f")
-        flds = {kanji_fields[n]: raw[n] for n in range(len(kanji_fields))}
+        note = col.get_note(note_id)
 
-        jp_examples = flds["Japanese examples"].split("<br>")
-        en_examples = flds["English examples"].split("<br>")
+        jp_examples = note["Japanese examples"].split("<br>")
+        en_examples = note["English examples"].split("<br>")
         if len(jp_examples) != len(en_examples):
             print(
-                f"ERROR: examples mismatch on {flds['Kanji']} ({flds['Meaning']}):\n"
+                f"ERROR: examples mismatch on {note['Kanji']} ({note['Meaning']}):\n"
                 f"\t{jp_examples}\n"
                 f"\t{en_examples}\n",
                 file=sys.stderr,
@@ -80,7 +49,7 @@ if __name__ == "__main__":
                     en=en_examples[n].strip(),
                     note_id=count,
                     example_id=n + 1,
-                    date=datetime.fromtimestamp(note["id"] // 1000),
+                    date=datetime.fromtimestamp(note.id // 1000),
                 )
             )
 
@@ -88,10 +57,7 @@ if __name__ == "__main__":
 
     missing_examples = []
     for ex in examples:
-        found = cur.execute(
-            f"SELECT * FROM notes WHERE mid = {vocab_id} AND sfld = '{ex.jp}'"
-        )
-        if not found.fetchone():
+        if not col.find_notes(f'note:"Japanese vocab" Japanese:"{ex.jp}"'):
             missing_examples.append(ex)
 
     table = Table("date", "note", "ex#", "Japanese", "English", box=box.SIMPLE)

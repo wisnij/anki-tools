@@ -12,7 +12,6 @@ from anki.collection import Collection
 from util.furigana import furigana_to_kanji, furigana_to_kana
 from util.mora import mora_len, mora_substr
 
-
 DEFAULT_ACCENTS_FILE = Path(__file__).parent / "accents.json"
 DEFAULT_DB_LOCATION = "~/.local/share/Anki2/Jim/collection.anki2"
 
@@ -94,7 +93,7 @@ if __name__ == "__main__":
     col = Collection(args.anki_collection)
     stats = Stats()
     updates = []
-    for note_id in col.find_notes('"note:Japanese vocab"'):
+    for note_id in sorted(col.find_notes('"note:Japanese vocab"')):
         note = col.get_note(note_id)
         jp = note["Japanese"]
         new_accent = make_accent_span(accent_data, jp)

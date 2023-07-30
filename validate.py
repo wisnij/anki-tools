@@ -3,8 +3,9 @@
 
 import os
 import re
-import sqlite3
 import sys
+
+from anki.collection import Collection
 
 DB_LOCATION = "~/.local/share/Anki2/Jim/collection.anki2"
 
@@ -14,48 +15,19 @@ KANJI_RE = re.compile(r"[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]")
 SPACES = (" ", "&nbsp;")
 
 
-def dict_factory(cursor, row):
-    fields = [column[0] for column in cursor.description]
-    return {key: value for key, value in zip(fields, row)}
-
-
-def notetype_id(cur, field_name):
-    notetype = cur.execute(
-        f"SELECT * FROM notetypes WHERE name = '{field_name}' COLLATE BINARY"
-    )
-    return notetype.fetchone()["id"]
-
-
-def note_fields(cur, notetype_id):
-    fields = {}
-    for field in cur.execute(f"SELECT * FROM fields WHERE ntid = {notetype_id}"):
-        fields[field["ord"]] = field["name"]
-
-    return fields
-
-
-def fields_dict(note, field_names):
-    raw_fields = note["flds"].split("\x1f")
-    return {field_names[n]: raw_fields[n] for n in range(len(field_names))}
-
-
 if __name__ == "__main__":
     db_file = os.path.expanduser(DB_LOCATION)
-    db = sqlite3.connect(db_file)
-    db.row_factory = dict_factory
-
-    cur = db.cursor()
+    col = Collection(db_file)
 
     # validate kanji
-    kanji_id = notetype_id(cur, "Kanji")
-    kanji_fields = note_fields(cur, kanji_id)
     kanji_count = 0
     kanji_errors = 0
-    for note in cur.execute(f"SELECT * FROM notes WHERE mid = {kanji_id}"):
+    for note_id in sorted(col.find_notes("note:Kanji")):
         kanji_count += 1
-        fields = fields_dict(note, kanji_fields)
-        kanji = fields["Kanji"]
-        en = fields["Meaning"]
+
+        note = col.get_note(note_id)
+        kanji = note["Kanji"]
+        en = note["Meaning"]
         display = f"{kanji} ({en})"
 
         error = False
@@ -64,7 +36,7 @@ if __name__ == "__main__":
         missing = list(
             f
             for f in {"Kanji", "Meaning", "Japanese examples", "English examples"}
-            if not fields[f]
+            if not note[f]
         )
         if missing:
             error = True
@@ -72,12 +44,12 @@ if __name__ == "__main__":
                 print(f"{display}: '{field}' missing")
 
         # missing readings
-        if not fields["Kun-yomi"] and not fields["On-yomi"]:
+        if not note["Kun-yomi"] and not note["On-yomi"]:
             error = True
             print(f"{display}: missing both Kun-yomi and On-yomi")
 
         # didn't switch on-yomi input to katakana
-        on_yomi = fields["On-yomi"]
+        on_yomi = note["On-yomi"]
         if HIRAGANA_RE.search(on_yomi):
             error = True
             print(f"{display}: hiragana in On-yomi: {on_yomi!r}")
@@ -89,7 +61,7 @@ if __name__ == "__main__":
 
         # Japanese examples with trailing spaces
         example_lines_ws = list(
-            e for e in fields["Japanese examples"].split("<br>") if e.endswith(SPACES)
+            e for e in note["Japanese examples"].split("<br>") if e.endswith(SPACES)
         )
         if example_lines_ws:
             error = True
@@ -100,15 +72,15 @@ if __name__ == "__main__":
         no_furigana = list(
             f
             for f in {"Japanese examples", "Notes"}
-            if fields[f] and KANJI_RE.search(fields[f]) and "[" not in fields[f]
+            if note[f] and KANJI_RE.search(note[f]) and "[" not in note[f]
         )
         if no_furigana:
             error = True
             for field in no_furigana:
-                print(f"{display}: no furigana in {field}: {fields[field]!r}")
+                print(f"{display}: no furigana in {field}: {note[field]!r}")
 
         # parts without radical
-        parts = fields["Parts"]
+        parts = note["Parts"]
         if parts and "<b>" not in parts:
             error = True
             print(f"{display}: no radical indicated in {parts!r}")
@@ -119,23 +91,21 @@ if __name__ == "__main__":
     print(f"Kanji: {kanji_count} notes, {kanji_errors} error(s)\n")
 
     # validate vocabulary
-    vocab_id = notetype_id(cur, "Japanese vocab")
-    vocab_fields = note_fields(cur, vocab_id)
-
     vocab_count = 0
     vocab_errors = 0
-    for note in cur.execute(f"SELECT * FROM notes WHERE mid = {vocab_id}"):
+    for note_id in sorted(col.find_notes('"note:Japanese vocab"')):
         vocab_count += 1
-        fields = fields_dict(note, vocab_fields)
-        jp = fields["Japanese"]
-        en = fields["English"]
+
+        note = col.get_note(note_id)
+        jp = note["Japanese"]
+        en = note["English"]
         display = f"{jp} ({en.replace('<br>', ' ')})"
 
         error = False
 
         # missing required fields
         missing = list(
-            f for f in {"Japanese", "English", "Part of speech"} if not fields[f]
+            f for f in {"Japanese", "English", "Part of speech"} if not note[f]
         )
         if missing:
             error = True
@@ -151,15 +121,15 @@ if __name__ == "__main__":
         no_furigana = list(
             f
             for f in {"Japanese", "Japanese examples", "Notes"}
-            if fields[f] and KANJI_RE.search(fields[f]) and "[" not in fields[f]
+            if note[f] and KANJI_RE.search(note[f]) and "[" not in note[f]
         )
         if no_furigana:
             error = True
             for field in no_furigana:
-                print(f"{display}: no furigana in {field}: {fields[field]!r}")
+                print(f"{display}: no furigana in {field}: {note[field]!r}")
 
         # Kana-only flag
-        kana_only = fields["Kana only"]
+        kana_only = note["Kana only"]
         if kana_only and "[" in jp:
             error = True
             print(f'{display}: marked "Kana only" but furigana in {jp!r}')

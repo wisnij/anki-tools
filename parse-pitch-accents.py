@@ -107,5 +107,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     accents = parse_words(os.path.expanduser(args.words_file))
-    json.dump(accents, sys.stdout, ensure_ascii=False, indent=4, sort_keys=True)
-    print()
+    print(json.dumps(accents, ensure_ascii=False, indent=4, sort_keys=True))

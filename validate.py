@@ -20,6 +20,8 @@ if __name__ == "__main__":
     col = Collection(db_file)
 
     # validate kanji
+    # all fields: Kanji, Kun-yomi, On-yomi, Meaning, Japanese examples, English
+    #             examples, Parts, Notes
     kanji_count = 0
     kanji_errors = 0
     for note_id in sorted(col.find_notes("note:Kanji")):
@@ -42,6 +44,17 @@ if __name__ == "__main__":
             error = True
             for field in missing:
                 print(f"{display}: '{field}' missing")
+
+        # HTML tags; usually a stray <div>
+        has_html = list(
+            f
+            for f in {"Kanji", "Kun-yomi", "On-yomi"}
+            if "<" in note[f] or ">" in note[f]
+        )
+        if has_html:
+            error = True
+            for field in has_html:
+                print(f"{display}: '{field}' contains HTML tag(s): {note[field]!r}")
 
         # missing readings
         if not note["Kun-yomi"] and not note["On-yomi"]:
@@ -91,6 +104,8 @@ if __name__ == "__main__":
     print(f"Kanji: {kanji_count} notes, {kanji_errors} error(s)\n")
 
     # validate vocabulary
+    # all fields: Japanese, English, Part of speech, Japanese examples, English
+    #             examples, Notes, Kana only, Kanji only, Pitch accent
     vocab_count = 0
     vocab_errors = 0
     for note_id in sorted(col.find_notes('"note:Japanese vocab"')):
@@ -111,6 +126,17 @@ if __name__ == "__main__":
             error = True
             for field in missing:
                 print(f"{display}: '{field}' missing")
+
+        # HTML tags; usually a stray <div>
+        has_html = list(
+            f
+            for f in {"Japanese", "Part of speech"}
+            if "<" in note[f] or ">" in note[f]
+        )
+        if has_html:
+            error = True
+            for field in has_html:
+                print(f"{display}: '{field}' contains HTML tag(s): {note[field]!r}")
 
         # leading/trailing spaces
         if jp.startswith(SPACES) or jp.endswith(SPACES):

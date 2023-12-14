@@ -15,17 +15,13 @@ KANJI_RE = re.compile(r"[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]")
 SPACES = (" ", "&nbsp;")
 
 
-if __name__ == "__main__":
-    db_file = os.path.expanduser(DB_LOCATION)
-    col = Collection(db_file)
-
-    # validate kanji
+def validate_kanji(col: Collection) -> bool:
     # all fields: Kanji, Kun-yomi, On-yomi, Meaning, Japanese examples, English
     #             examples, Parts, Notes
-    kanji_count = 0
-    kanji_errors = 0
+    count = 0
+    errors = 0
     for note_id in sorted(col.find_notes("note:Kanji")):
-        kanji_count += 1
+        count += 1
 
         note = col.get_note(note_id)
         kanji = note["Kanji"]
@@ -99,17 +95,19 @@ if __name__ == "__main__":
             print(f"{display}: no radical indicated in {parts!r}")
 
         if error:
-            kanji_errors += 1
+            errors += 1
 
-    print(f"Kanji: {kanji_count} notes, {kanji_errors} error(s)\n")
+    print(f"Kanji: {count} notes, {errors} error(s)\n")
+    return errors == 0
 
-    # validate vocabulary
+
+def validate_vocab(col: Collection) -> bool:
     # all fields: Japanese, English, Part of speech, Japanese examples, English
     #             examples, Notes, Kana only, Kanji only, Pitch accent
-    vocab_count = 0
-    vocab_errors = 0
+    count = 0
+    errors = 0
     for note_id in sorted(col.find_notes('"note:Japanese vocab"')):
-        vocab_count += 1
+        count += 1
 
         note = col.get_note(note_id)
         jp = note["Japanese"]
@@ -164,8 +162,17 @@ if __name__ == "__main__":
             print(f'{display}: not marked "Kana only" but no furigana in {jp!r}')
 
         if error:
-            vocab_errors += 1
+            errors += 1
 
-    print(f"Vocabulary: {vocab_count} notes, {vocab_errors} error(s)\n")
+    print(f"Vocabulary: {count} notes, {errors} error(s)\n")
+    return errors == 0
 
-    sys.exit(1 if kanji_errors or vocab_errors else 0)
+
+if __name__ == "__main__":
+    db_file = os.path.expanduser(DB_LOCATION)
+    col = Collection(db_file)
+
+    kanji_valid = validate_kanji(col)
+    vocab_valid = validate_vocab(col)
+
+    sys.exit(0 if kanji_valid and vocab_valid else 1)

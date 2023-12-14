@@ -53,7 +53,7 @@ def validate_kanji(col: Collection) -> bool:
                 print(f"{display}: '{field}' contains HTML tag(s): {note[field]!r}")
 
         # missing readings
-        if not note["Kun-yomi"] and not note["On-yomi"]:
+        if not note["Kun-yomi"] and not note["On-yomi"] and kanji != "々":
             error = True
             print(f"{display}: missing both Kun-yomi and On-yomi")
 

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Check Anki deck for common mistakes."""
 
+# TODO: check for missing bold in examples
+# TODO: check for empty cards
+
 import os
 import re
 import sys

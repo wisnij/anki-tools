@@ -45,6 +45,12 @@ if __name__ == "__main__":
         help="Anki collection sqlite file",
     )
     parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="show what would be done without committing changes",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
@@ -109,7 +115,7 @@ if __name__ == "__main__":
     print(f"already bold:    {stats.already_bold}")
     print(f"to update:       {stats.update}")
 
-    if updates:
+    if updates and not args.dry_run:
         print()
         print(f"updating {len(updates)} notes")
         col.update_notes(updates)

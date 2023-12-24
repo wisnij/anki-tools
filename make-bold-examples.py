@@ -66,21 +66,20 @@ if __name__ == "__main__":
         stats.count += 1
 
         note = col.get_note(note_id)
-        jp = note["Japanese"]
-        en = note["English"]
-        display = f"{jp} ({en.replace('<br>', ' ')})"
+        orig_jp = note["Japanese"]
+        jp = re.sub("^〜 ?", "", orig_jp)
 
         examples = note["Japanese examples"]
         if not examples:
             stats.no_examples += 1
             if args.verbose:
-                console.print(f"[dim white]no examples[/dim white]: {jp}")
+                console.print(f"[dim white]no examples[/dim white]: {orig_jp}")
             continue
 
         if "<b>" in examples:
             stats.already_bold += 1
             if args.verbose:
-                console.print(f"[yellow]already bold[/yellow]: {jp}")
+                console.print(f"[yellow]already bold[/yellow]: {orig_jp}")
             continue
 
         bolded = None
@@ -100,13 +99,13 @@ if __name__ == "__main__":
             stats.update += 1
             note["Japanese examples"] = examples
             updates.append(note)
-            console.print(f"[green]bolded {bolded}[/green]: {jp}")
+            console.print(f"[green]bolded {bolded}[/green]: {orig_jp}")
             if args.verbose >= 2:
                 for line in examples.split("<br>"):
                     console.print(f"    {line}")
         else:
             stats.not_in_examples += 1
-            console.print(f"[red]not in examples[/red]: {jp}")
+            console.print(f"[red]not in examples[/red]: {orig_jp}")
 
     print()
     print(f"count:           {stats.count}")

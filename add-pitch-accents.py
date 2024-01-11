@@ -155,3 +155,5 @@ if __name__ == "__main__":
         print(f"updating {len(updates)} notes")
         col.update_notes(updates)
         col.save()
+
+    print()

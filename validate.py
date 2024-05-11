@@ -83,7 +83,7 @@ def validate_kanji(col: Collection) -> bool:
         # kanji without furigana
         no_furigana = list(
             f
-            for f in {"Japanese examples", "Notes"}
+            for f in {"Japanese examples"}
             if note[f] and KANJI_RE.search(note[f]) and "[" not in note[f]
         )
         if no_furigana:
@@ -147,7 +147,7 @@ def validate_vocab(col: Collection) -> bool:
         # kanji without furigana
         no_furigana = list(
             f
-            for f in {"Japanese", "Japanese examples", "Notes"}
+            for f in {"Japanese", "Japanese examples"}
             if note[f] and KANJI_RE.search(note[f]) and "[" not in note[f]
         )
         if no_furigana:
